@@ -33,7 +33,7 @@ module HTTPRequest
   end
 
   def self.parse_headers(headers)
-    headers.reduce({}) do |parsed, line|
+    return headers.reduce({}) do |parsed, line|
       k, v = line.split(": ")
       parsed[k] = v
       parsed

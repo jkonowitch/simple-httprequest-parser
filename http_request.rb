@@ -1,21 +1,28 @@
-class HTTPRequest
-  attr_reader :connection, :request
-
-  def initialize(connection)
-    @connection = connection
-    @request = { path: "", verb: "", headers: {}, body: ""}
+module HTTPRequest
+  def self.parse(connection)
+    request = {}
     
-    parse_headers(read_headers)
-    read_body
-  end
+    headers = self.read_headers(connection).split("\r\n")
 
-  def [](key)
-    return request[key]
+    request[:path], request[:verb], request[:query_string] = parse_resource(headers.shift).values_at(:path, :verb, :query_string)
+
+    request[:headers] = self.parse_headers(headers)
+
+    request[:body] = read_body(request, connection)
+
+    return request
   end
 
   private
 
-  def read_headers
+  def self.parse_resource(resource)
+    verb, full_path = resource.split(" ")
+    path, query_string = full_path.split("?")[1]
+
+    return { path: path, verb: verb, query_string: query_string }
+  end
+
+  def self.read_headers(connection)
     headers = ""
     
     while (line = connection.gets) != "\r\n"
@@ -26,20 +33,20 @@ class HTTPRequest
   end
 
   def parse_headers(headers)
-    headers = headers.split("\r\n")
-
-    self.request[:headers][:resource] = headers.shift
-
-    headers.each do |line|
+    headers.reduce({}) do |parsed, line|
       k, v = line.split(": ")
-      self.request[:headers][k] = v
+      parsed[k] = v
+      parsed
     end
   end
 
-  def read_body
-    if request[:headers]["Content-Length"]
-      body = connection.read(request[:headers]["Content-Length"].to_i)
-      self.request[:body] = body
+  def read_body(request, connection)
+    body = ""
+
+    if (body_length = request[:headers]["Content-Length"])
+      body << connection.read(body_length.to_i)
     end
+
+    return body
   end
 end

@@ -8,7 +8,7 @@ module HTTPRequest
 
     request[:headers] = self.parse_headers(headers)
 
-    request[:body] = read_body(request, connection)
+    request[:body] = self.read_body(request, connection)
 
     return request
   end
@@ -17,7 +17,7 @@ module HTTPRequest
 
   def self.parse_resource(resource)
     verb, full_path = resource.split(" ")
-    path, query_string = full_path.split("?")[1]
+    path, query_string = full_path.split("?")
 
     return { path: path, verb: verb, query_string: query_string }
   end
@@ -32,7 +32,7 @@ module HTTPRequest
     return headers
   end
 
-  def parse_headers(headers)
+  def self.parse_headers(headers)
     headers.reduce({}) do |parsed, line|
       k, v = line.split(": ")
       parsed[k] = v
@@ -40,7 +40,7 @@ module HTTPRequest
     end
   end
 
-  def read_body(request, connection)
+  def self.read_body(request, connection)
     body = ""
 
     if (body_length = request[:headers]["Content-Length"])
